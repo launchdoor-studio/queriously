@@ -16,7 +16,7 @@ export function TopBar({ onOpen, onSettings }: Props) {
   return (
     <header className="h-11 shrink-0 flex items-center px-3 border-b border-surface-border bg-surface-raised">
       <div className="flex items-center gap-2 pr-3 border-r border-surface-border">
-        <Logo size={20} />
+        <Logo size={20} className="text-accent-primary" />
         <span className="font-semibold tracking-tight">Queriously</span>
       </div>
       <div className="mx-3 text-text-secondary truncate">
