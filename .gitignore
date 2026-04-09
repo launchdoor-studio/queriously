@@ -1,55 +1,35 @@
-# Compiled class files
-*.class
+# Node / Vite
+node_modules/
+dist/
+dist-ssr/
+*.local
 
-# Maven specific files
-target/
-pom.xml.tag
-pom.xml.releaseBackup
-pom.xml.versionsBackup
-pom.xml.next
-release.properties
+# Rust / Tauri
+src-tauri/target/
+src-tauri/gen/
 
-# Gradle specific files
-.gradle/
-build/
-!gradle-wrapper.jar
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
 
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
 
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*.swo
-
-# IntelliJ IDEA specific files
-.idea/
-*.iml
-*.iws
-out/
-
-# Eclipse specific files
-.project
-.classpath
-.settings/
-bin/
-
-# VS Code specific files
-.vscode/
-
-# OS specific files
+# OS
 .DS_Store
 Thumbs.db
 
-# Tool specific
-*.jar
-*.war
-*.ear
+# Editors
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
 
-# Spring Boot application properties
-*.yml
-
-# Test reports
-test-output/
-surefire-reports/
+# Queriously runtime data
+.queriously-dev/

@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply bg-surface-base text-text-primary font-sans antialiased;
+    font-size: 14px;
+  }
+
+  ::selection {
+    @apply bg-accent-primary/30 text-text-primary;
+  }
+}
+
+@layer components {
+  .q-panel {
+    @apply bg-surface-raised border border-surface-border;
+  }
+  .q-btn {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md
+           text-text-primary hover:bg-surface-overlay transition-colors
+           focus:outline-none focus:ring-1 focus:ring-accent-primary/50;
+  }
+  .q-btn-primary {
+    @apply q-btn bg-accent-primary/90 text-surface-base hover:bg-accent-primary;
+  }
+  .q-input {
+    @apply bg-surface-overlay border border-surface-border rounded-md px-2.5 py-1.5
+           text-text-primary placeholder:text-text-muted
+           focus:outline-none focus:ring-1 focus:ring-accent-primary/50;
+  }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2E3250;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4E5578;
+}
