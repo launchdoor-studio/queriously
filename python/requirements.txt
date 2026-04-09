@@ -1,0 +1,12 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.9.2
+PyMuPDF==1.24.13
+pdfplumber==0.11.4
+sentence-transformers==3.3.1
+chromadb==0.5.20
+litellm==1.52.15
+httpx==0.27.2
+latex2sympy2==1.9.1
+sympy==1.13.3
+matplotlib==3.9.2

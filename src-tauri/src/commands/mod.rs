@@ -1,4 +1,5 @@
 pub mod pdf;
+pub mod sidecar_cmd;
 
 use crate::db::DbHandle;
 
