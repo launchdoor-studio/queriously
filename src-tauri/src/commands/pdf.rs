@@ -28,7 +28,6 @@ fn now_secs() -> i64 {
 }
 
 /// Open a PDF: hash it, upsert into the library, and return the paper row.
-/// Indexing is triggered separately by the Python sidecar (step 7).
 #[tauri::command]
 pub async fn open_pdf(path: String, state: State<'_, AppState>) -> Result<Paper, String> {
     let p = PathBuf::from(&path);
@@ -74,6 +73,39 @@ pub fn get_library(state: State<'_, AppState>) -> Result<Vec<Paper>, String> {
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
     Ok(rows)
+}
+
+/// Remove a paper from the library. With `delete_annotations = true` the
+/// cascade drops annotations/marginalia/chat — default is to keep them around
+/// so the user can re-add the PDF and find their notes intact.
+#[tauri::command]
+pub fn delete_paper(
+    paper_id: String,
+    delete_annotations: bool,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let db = state.db.lock();
+    if delete_annotations {
+        db.execute("DELETE FROM papers WHERE id = ?1", [&paper_id])
+            .map_err(|e| e.to_string())?;
+    } else {
+        // Keep child rows (annotations/marginalia/chat) but detach the paper
+        // so it no longer shows up in the library list.
+        db.execute(
+            "UPDATE papers SET last_opened = NULL WHERE id = ?1",
+            [&paper_id],
+        )
+        .map_err(|e| e.to_string())?;
+        db.execute(
+            "DELETE FROM papers WHERE id = ?1 AND NOT EXISTS (
+                 SELECT 1 FROM annotations WHERE paper_id = ?1
+                 UNION ALL SELECT 1 FROM marginalia WHERE paper_id = ?1
+             )",
+            [&paper_id],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 fn read_paper(db: &rusqlite::Connection, id: &str) -> rusqlite::Result<Paper> {

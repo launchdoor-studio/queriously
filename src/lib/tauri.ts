@@ -26,5 +26,7 @@ export type SidecarStatus = {
 export const api = {
   openPdf: (path: string) => invoke<Paper>("open_pdf", { path }),
   getLibrary: () => invoke<Paper[]>("get_library"),
+  deletePaper: (paperId: string, deleteAnnotations: boolean) =>
+    invoke<void>("delete_paper", { paperId, deleteAnnotations }),
   sidecarStatus: () => invoke<SidecarStatus>("sidecar_status"),
 };

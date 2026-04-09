@@ -28,6 +28,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::pdf::open_pdf,
             commands::pdf::get_library,
+            commands::pdf::delete_paper,
             commands::sidecar_cmd::sidecar_status,
         ])
         .run(tauri::generate_context!())
