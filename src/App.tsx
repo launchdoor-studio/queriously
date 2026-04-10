@@ -63,7 +63,7 @@ function App() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-surface-base text-text-primary">
-      <TopBar onOpen={onOpen} />
+      <TopBar onOpen={onOpen} onSettings={() => setShowOnboarding(true)} />
       <main className="flex-1 min-h-0">
         <PanelGroup direction="horizontal" autoSaveId="queriously-main">
           <Panel defaultSize={18} minSize={12} maxSize={32}>
@@ -81,6 +81,9 @@ function App() {
       </main>
       <StatusBar />
       <FloatingToolbar />
+      {showOnboarding && (
+        <OnboardingModal onClose={() => setShowOnboarding(false)} />
+      )}
     </div>
   );
 }
