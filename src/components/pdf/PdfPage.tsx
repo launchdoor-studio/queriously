@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { PdfDoc } from "../../lib/pdfjs";
 import { pdfjsLib } from "../../lib/pdfjs";
+import { AnnotationLayer } from "./AnnotationLayer";
 import { MarginaliaLayer } from "./MarginaliaLayer";
 
 type Props = {
@@ -134,6 +135,7 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
           Page {pageNumber}
         </div>
       )}
+      <AnnotationLayer page={pageNumber} />
       <MarginaliaLayer page={pageNumber} />
     </div>
   );

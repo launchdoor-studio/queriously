@@ -9,12 +9,14 @@ import { StatusBar } from "./components/layout/StatusBar";
 import { TopBar } from "./components/layout/TopBar";
 import { FloatingToolbar } from "./components/pdf/FloatingToolbar";
 import { PDFViewer } from "./components/pdf/PDFViewer";
+import { useAnnotations } from "./hooks/useAnnotations";
 import { useMarginalia } from "./hooks/useMarginalia";
 import { usePdf } from "./hooks/usePdf";
 import { useReadingProgress } from "./hooks/useReadingProgress";
 
 function App() {
   const { openPath } = usePdf();
+  useAnnotations();
   useMarginalia();
   useReadingProgress();
 

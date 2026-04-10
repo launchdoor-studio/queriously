@@ -6,24 +6,22 @@ import {
   Sigma,
   NotebookPen,
 } from "lucide-react";
+import { useAnnotationStore } from "../../store/annotationStore";
 import { usePdfStore } from "../../store/pdfStore";
 import { useChat } from "../../hooks/useChat";
 
-/**
- * Appears near a text selection in the PDF viewer with quick AI actions.
- * Spec §7.4 — 6 buttons: Ask, Summarize, Extract, Highlight, Margin note, Copy.
- * Phase 1 ships Ask + Copy; others are wired as stubs.
- */
 export function FloatingToolbar() {
   const selection = usePdfStore((s) => s.selection);
+  const paper = usePdfStore((s) => s.paper);
   const setSelection = usePdfStore((s) => s.setSelection);
   const { send } = useChat();
+  const addAnnotation = useAnnotationStore((s) => s.add);
+  const activeColor = useAnnotationStore((s) => s.activeColor);
 
   if (!selection || !selection.rect) return null;
 
-  const { text, rect } = selection;
+  const { text, page, rect } = selection;
 
-  // Position 8px above the selection (spec §11).
   const top = rect.top - 44;
   const left = rect.left + rect.width / 2;
 
@@ -33,6 +31,38 @@ export function FloatingToolbar() {
 
   function askAbout() {
     send(`Explain the following passage:\n\n> ${text}`, text);
+    dismiss();
+  }
+
+  function highlight() {
+    if (!paper) return;
+    // Store normalized coords based on the selection rect relative to the
+    // page element. This is a rough approximation — exact PDF-space mapping
+    // would require pdfjs viewport transform, deferred to Phase 2.
+    const pageEl = document.querySelector<HTMLElement>(`[data-page="${page}"]`);
+    let coords = [0, 0, 1, 0.02]; // fallback strip
+    if (pageEl) {
+      const pr = pageEl.getBoundingClientRect();
+      coords = [
+        (rect.left - pr.left) / pr.width,
+        (rect.top - pr.top) / pr.height,
+        (rect.right - pr.left) / pr.width,
+        (rect.bottom - pr.top) / pr.height,
+      ];
+    }
+    addAnnotation({
+      id: crypto.randomUUID(),
+      paper_id: paper.id,
+      session_id: null,
+      page,
+      coords: JSON.stringify(coords),
+      type: "highlight",
+      color: activeColor,
+      selected_text: text,
+      note_text: null,
+      created_at: Math.floor(Date.now() / 1000),
+      updated_at: null,
+    }).catch(console.error);
     dismiss();
   }
 
@@ -51,7 +81,7 @@ export function FloatingToolbar() {
       <ToolBtn icon={<MessageSquare className="w-4 h-4" />} label="Ask about this" onClick={askAbout} />
       <ToolBtn icon={<FileText className="w-4 h-4" />} label="Summarize" onClick={dismiss} />
       <ToolBtn icon={<Sigma className="w-4 h-4" />} label="Extract equation" onClick={dismiss} />
-      <ToolBtn icon={<Highlighter className="w-4 h-4" />} label="Highlight" onClick={dismiss} />
+      <ToolBtn icon={<Highlighter className="w-4 h-4" />} label="Highlight" onClick={highlight} />
       <ToolBtn icon={<NotebookPen className="w-4 h-4" />} label="Add margin note" onClick={dismiss} />
       <ToolBtn icon={<Copy className="w-4 h-4" />} label="Copy" onClick={copyText} />
     </div>
