@@ -11,10 +11,12 @@ import { FloatingToolbar } from "./components/pdf/FloatingToolbar";
 import { PDFViewer } from "./components/pdf/PDFViewer";
 import { useMarginalia } from "./hooks/useMarginalia";
 import { usePdf } from "./hooks/usePdf";
+import { useReadingProgress } from "./hooks/useReadingProgress";
 
 function App() {
   const { openPath } = usePdf();
   useMarginalia();
+  useReadingProgress();
 
   async function onOpen() {
     const path = await open({

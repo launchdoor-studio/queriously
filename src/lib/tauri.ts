@@ -50,5 +50,15 @@ export const api = {
     invoke<void>("generate_marginalia", { paperId, filePath }),
   getMarginalia: (paperId: string) =>
     invoke<any[]>("get_marginalia", { paperId }),
+  updateReadingProgress: (paperId: string, page: number, deltaSecs: number) =>
+    invoke<void>("update_reading_progress", { paperId, page, deltaSecs }),
+  getReadingProgress: (paperId: string) =>
+    invoke<{ page_number: number; time_spent_secs: number }[]>("get_reading_progress", { paperId }),
+  saveAnnotation: (annotation: any) =>
+    invoke<any>("save_annotation", { annotation }),
+  getAnnotations: (paperId: string) =>
+    invoke<any[]>("get_annotations", { paperId }),
+  deleteAnnotation: (id: string) =>
+    invoke<void>("delete_annotation", { id }),
   sidecarStatus: () => invoke<SidecarStatus>("sidecar_status"),
 };

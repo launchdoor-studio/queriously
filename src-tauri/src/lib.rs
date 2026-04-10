@@ -34,6 +34,11 @@ pub fn run() {
             commands::ai::generate_marginalia,
             commands::ai::get_marginalia,
             commands::ai::summarize_paper,
+            commands::annotations::update_reading_progress,
+            commands::annotations::get_reading_progress,
+            commands::annotations::save_annotation,
+            commands::annotations::get_annotations,
+            commands::annotations::delete_annotation,
             commands::sidecar_cmd::sidecar_status,
         ])
         .run(tauri::generate_context!())

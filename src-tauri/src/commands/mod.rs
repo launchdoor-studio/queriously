@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod annotations;
 pub mod pdf;
 pub mod sidecar_cmd;
 
