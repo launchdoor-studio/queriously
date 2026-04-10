@@ -10,6 +10,7 @@ import { PdfPage } from "./PdfPage";
  * follow-up if 500-page papers start to chug.
  */
 export function PDFViewer() {
+  const paper = usePdfStore((s) => s.paper);
   const doc = usePdfStore((s) => s.doc);
   const pageCount = usePdfStore((s) => s.pageCount);
   const zoom = usePdfStore((s) => s.zoom);
@@ -23,6 +24,11 @@ export function PDFViewer() {
     (p: number) => setCurrentPage(p),
     [setCurrentPage],
   );
+
+  // Scroll to top when a new paper is loaded.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, [paper?.id]);
 
   // Keyboard shortcuts per FR-PDF-09: j/k + arrows for page nav.
   useEffect(() => {
@@ -106,7 +112,7 @@ export function PDFViewer() {
     >
       {Array.from({ length: pageCount }, (_, i) => (
         <PdfPage
-          key={i + 1}
+          key={`${paper?.id ?? "doc"}-${i + 1}`}
           doc={doc}
           pageNumber={i + 1}
           zoom={zoom}

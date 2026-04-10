@@ -1,39 +1,43 @@
 import { listen } from "@tauri-apps/api/event";
 import { Copy, RefreshCw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { api } from "../../lib/tauri";
 import { usePdfStore } from "../../store/pdfStore";
+import { useSummaryStore } from "../../store/summaryStore";
 
 export function SummaryPanel() {
   const paper = usePdfStore((s) => s.paper);
-  const [content, setContent] = useState("");
-  const [loading, setLoading] = useState(false);
+  const paperId = paper?.id;
+  const content = useSummaryStore((s) => (paperId ? s.summaries[paperId] ?? "" : ""));
+  const loading = useSummaryStore((s) => s.loadingPaperId === paperId);
+  const setContent = useSummaryStore((s) => s.setContent);
+  const appendToken = useSummaryStore((s) => s.appendToken);
+  const setLoading = useSummaryStore((s) => s.setLoading);
+  const clear = useSummaryStore((s) => s.clear);
 
   // Listen for streaming tokens.
   useEffect(() => {
     let unsub: (() => void) | undefined;
     listen<{ paper_id: string; token: string }>("summary:token", (e) => {
-      if (e.payload.paper_id === paper?.id) {
-        setContent((c) => c + e.payload.token);
-      }
+      appendToken(e.payload.paper_id, e.payload.token);
     }).then((u) => {
       unsub = u;
     });
     return () => unsub?.();
-  }, [paper?.id]);
+  }, [appendToken]);
 
   async function generate() {
-    if (!paper) return;
-    setContent("");
-    setLoading(true);
+    if (!paperId) return;
+    clear(paperId);
+    setLoading(paperId);
     try {
-      const result = await api.summarizePaper(paper.id, "bullets", "full");
-      setContent(result);
+      const result = await api.summarizePaper(paperId, "bullets", "full");
+      setContent(paperId, result);
     } catch (err) {
-      setContent(`Error: ${err}`);
+      setContent(paperId, `Error: ${err}`);
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   }
 

@@ -34,6 +34,19 @@ export function FloatingToolbar() {
     dismiss();
   }
 
+  function extractEquation() {
+    send(
+      `Extract and explain the mathematical equation(s) in the following text. Format them in LaTeX notation and describe what each variable represents:\n\n> ${text}`,
+      text,
+    );
+    dismiss();
+  }
+
+  function summarizeSelection() {
+    send(`Summarize the following passage concisely:\n\n> ${text}`, text);
+    dismiss();
+  }
+
   function highlight() {
     if (!paper) return;
     // Store normalized coords based on the selection rect relative to the
@@ -79,8 +92,8 @@ export function FloatingToolbar() {
       style={{ top, left, transform: "translateX(-50%)" }}
     >
       <ToolBtn icon={<MessageSquare className="w-4 h-4" />} label="Ask about this" onClick={askAbout} />
-      <ToolBtn icon={<FileText className="w-4 h-4" />} label="Summarize" onClick={dismiss} />
-      <ToolBtn icon={<Sigma className="w-4 h-4" />} label="Extract equation" onClick={dismiss} />
+      <ToolBtn icon={<FileText className="w-4 h-4" />} label="Summarize" onClick={summarizeSelection} />
+      <ToolBtn icon={<Sigma className="w-4 h-4" />} label="Extract equation" onClick={extractEquation} />
       <ToolBtn icon={<Highlighter className="w-4 h-4" />} label="Highlight" onClick={highlight} />
       <ToolBtn icon={<NotebookPen className="w-4 h-4" />} label="Add margin note" onClick={dismiss} />
       <ToolBtn icon={<Copy className="w-4 h-4" />} label="Copy" onClick={copyText} />
