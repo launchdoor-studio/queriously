@@ -8,24 +8,23 @@ import { ReadingModeSelector } from "./ReadingModeSelector";
 import { api } from "../../lib/tauri";
 
 export function ChatPanel() {
-  const messages = useChatStore((s) => s.messages);
+  const paper = usePdfStore((s) => s.paper);
+  const paperId = paper?.id ?? null;
+  const messages = useChatStore((s) =>
+    paperId ? s.messagesByPaper[paperId] ?? [] : [],
+  );
   const isLoading = useChatStore((s) => s.isLoading);
   const clearChat = useChatStore((s) => s.clearChat);
-  const paper = usePdfStore((s) => s.paper);
+  const setActivePaper = useChatStore((s) => s.setActivePaper);
   const { send } = useChat();
   const [input, setInput] = useState("");
   const [aiReady, setAiReady] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const prevPaperIdRef = useRef<string | null>(null);
 
-  // Clear chat when switching to a different paper.
+  // Keep chat store in sync with the active paper.
   useEffect(() => {
-    const id = paper?.id ?? null;
-    if (prevPaperIdRef.current !== null && id !== prevPaperIdRef.current) {
-      clearChat();
-    }
-    prevPaperIdRef.current = id;
-  }, [paper?.id, clearChat]);
+    setActivePaper(paperId);
+  }, [paperId, setActivePaper]);
 
   // Check sidecar health before allowing sends.
   useEffect(() => {

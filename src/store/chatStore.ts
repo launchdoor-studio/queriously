@@ -25,42 +25,91 @@ export type ChatMessage = {
 };
 
 type ChatState = {
-  messages: ChatMessage[];
+  /** Messages keyed by paper ID */
+  messagesByPaper: Record<string, ChatMessage[]>;
   readingMode: ReadingMode;
   isLoading: boolean;
+  activePaperId: string | null;
 
+  setActivePaper: (paperId: string | null) => void;
   setReadingMode: (mode: ReadingMode) => void;
   addMessage: (msg: ChatMessage) => void;
   appendToken: (id: string, token: string) => void;
   finalizeMessage: (id: string, data: Partial<ChatMessage>) => void;
   setLoading: (v: boolean) => void;
   clearChat: () => void;
+
+  /** Convenience getter for the active paper's messages */
+  messages: ChatMessage[];
 };
 
-export const useChatStore = create<ChatState>((set) => ({
-  messages: [],
+export const useChatStore = create<ChatState>((set, get) => ({
+  messagesByPaper: {},
   readingMode: "explain",
   isLoading: false,
+  activePaperId: null,
+
+  get messages() {
+    const { activePaperId, messagesByPaper } = get();
+    return activePaperId ? messagesByPaper[activePaperId] ?? [] : [];
+  },
+
+  setActivePaper: (paperId) => set({ activePaperId: paperId }),
 
   setReadingMode: (mode) => set({ readingMode: mode }),
 
   addMessage: (msg) =>
-    set((s) => ({ messages: [...s.messages, msg] })),
+    set((s) => {
+      const pid = s.activePaperId;
+      if (!pid) return s;
+      const existing = s.messagesByPaper[pid] ?? [];
+      return {
+        messagesByPaper: {
+          ...s.messagesByPaper,
+          [pid]: [...existing, msg],
+        },
+      };
+    }),
 
   appendToken: (id, token) =>
-    set((s) => ({
-      messages: s.messages.map((m) =>
-        m.id === id ? { ...m, content: m.content + token } : m,
-      ),
-    })),
+    set((s) => {
+      const pid = s.activePaperId;
+      if (!pid) return s;
+      const msgs = s.messagesByPaper[pid];
+      if (!msgs) return s;
+      return {
+        messagesByPaper: {
+          ...s.messagesByPaper,
+          [pid]: msgs.map((m) =>
+            m.id === id ? { ...m, content: m.content + token } : m,
+          ),
+        },
+      };
+    }),
 
   finalizeMessage: (id, data) =>
-    set((s) => ({
-      messages: s.messages.map((m) =>
-        m.id === id ? { ...m, ...data, isStreaming: false } : m,
-      ),
-    })),
+    set((s) => {
+      const pid = s.activePaperId;
+      if (!pid) return s;
+      const msgs = s.messagesByPaper[pid];
+      if (!msgs) return s;
+      return {
+        messagesByPaper: {
+          ...s.messagesByPaper,
+          [pid]: msgs.map((m) =>
+            m.id === id ? { ...m, ...data, isStreaming: false } : m,
+          ),
+        },
+      };
+    }),
 
   setLoading: (v) => set({ isLoading: v }),
-  clearChat: () => set({ messages: [] }),
+
+  clearChat: () =>
+    set((s) => {
+      const pid = s.activePaperId;
+      if (!pid) return s;
+      const { [pid]: _, ...rest } = s.messagesByPaper;
+      return { messagesByPaper: rest };
+    }),
 }));
