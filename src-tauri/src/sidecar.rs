@@ -20,24 +20,54 @@ struct Handshake {
     port: u16,
 }
 
+/// Walk candidate directories to find the repo root that contains `python/main.py`.
+fn find_repo_root() -> Option<std::path::PathBuf> {
+    let has_python = |dir: &std::path::Path| dir.join("python").join("main.py").exists();
+
+    // 1. Relative to the running executable.
+    //    Bundled: Queriously.app/Contents/MacOS/queriously → ../../../../ is repo root
+    //    Release binary: target/release/queriously → ../../../ is repo root
+    if let Ok(exe) = std::env::current_exe().and_then(std::fs::canonicalize) {
+        let mut dir = exe.as_path();
+        // Walk up to 10 levels from the binary to find the repo root.
+        // Bundled .app is 9 levels deep: MacOS/Contents/App/macos/bundle/release/target/src-tauri/repo
+        for _ in 0..10 {
+            if let Some(parent) = dir.parent() {
+                dir = parent;
+                if has_python(dir) {
+                    return Some(dir.to_path_buf());
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
+    // 2. Check cwd (running from repo root).
+    if let Ok(cwd) = std::env::current_dir() {
+        if has_python(&cwd) {
+            return Some(cwd);
+        }
+        // 3. Check parent of cwd (tauri dev runs from src-tauri/).
+        let parent = cwd.join("..");
+        if has_python(&parent) {
+            return std::fs::canonicalize(parent).ok();
+        }
+    }
+
+    None
+}
+
 /// Locate the bundled Python sidecar entry point. For local dev we fall back
 /// to the repo's `python/main.py` invoked via the system Python. Phase 4 will
 /// swap this for a PyInstaller-bundled binary (OQ-02 in the spec).
 fn sidecar_command() -> Option<Command> {
     // Find the repo root containing the `python/` package directory.
-    // Dev mode: tauri dev runs from src-tauri/, so we also check one level up.
-    let repo_root = std::env::current_dir().ok().and_then(|cwd| {
-        // Check if cwd itself contains python/main.py
-        if cwd.join("python").join("main.py").exists() {
-            return Some(cwd);
-        }
-        // Check parent (tauri dev runs from src-tauri/)
-        let parent = cwd.join("..");
-        if parent.join("python").join("main.py").exists() {
-            return Some(std::fs::canonicalize(parent).ok()?);
-        }
-        None
-    })?;
+    // We check multiple locations:
+    //   1. Relative to the executable (works for bundled .app and release binary)
+    //   2. cwd (works when run from repo root)
+    //   3. cwd/.. (tauri dev runs from src-tauri/)
+    let repo_root = find_repo_root()?;
 
     let python_dir = repo_root.join("python");
 
