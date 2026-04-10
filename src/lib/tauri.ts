@@ -44,5 +44,9 @@ export const api = {
     invoke<void>("delete_paper", { paperId, deleteAnnotations }),
   ingestPaper: (paperId: string, filePath: string) =>
     invoke<IngestResult>("ingest_paper", { paperId, filePath }),
+  generateMarginalia: (paperId: string, filePath: string) =>
+    invoke<void>("generate_marginalia", { paperId, filePath }),
+  getMarginalia: (paperId: string) =>
+    invoke<any[]>("get_marginalia", { paperId }),
   sidecarStatus: () => invoke<SidecarStatus>("sidecar_status"),
 };

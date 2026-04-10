@@ -28,9 +28,11 @@ app = FastAPI(title="Queriously Sidecar", version=APP_VERSION)
 # --- routers ---
 from .routers.ingest import router as ingest_router  # noqa: E402
 from .routers.qa import router as qa_router  # noqa: E402
+from .routers.marginalia import router as marginalia_router  # noqa: E402
 
 app.include_router(ingest_router)
 app.include_router(qa_router)
+app.include_router(marginalia_router)
 
 
 class HealthResponse(BaseModel):

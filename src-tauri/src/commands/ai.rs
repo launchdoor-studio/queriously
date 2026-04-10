@@ -200,3 +200,152 @@ pub async fn ask_question(
 
     Ok(())
 }
+
+// ---------- Marginalia ----------
+
+/// Trigger marginalia generation for a paper. The sidecar streams notes as SSE
+/// events; Rust persists each one to SQLite and re-emits it to the frontend.
+#[tauri::command]
+pub async fn generate_marginalia(
+    paper_id: String,
+    file_path: String,
+    app: AppHandle,
+    sidecar: State<'_, SidecarHandle>,
+    db_state: State<'_, AppState>,
+) -> Result<(), String> {
+    let url = base_url(&sidecar).ok_or("sidecar not ready")?;
+
+    // Ensure the sidecar has the page cache for this paper.
+    let _ = HTTP
+        .post(format!("{url}/marginalia/cache-pages?paper_id={paper_id}&file_path={file_path}"))
+        .send()
+        .await;
+
+    // Trigger generation for all pages (the sidecar will process in batches).
+    let resp = HTTP
+        .post(format!("{url}/marginalia/generate"))
+        .json(&serde_json::json!({
+            "paper_id": &paper_id,
+            "pages": [],
+        }))
+        .timeout(std::time::Duration::from_secs(600))
+        .send()
+        .await
+        .map_err(|e| format!("marginalia request failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("marginalia error: {body}"));
+    }
+
+    // Stream SSE events.
+    use futures_util::StreamExt;
+    let mut stream = resp.bytes_stream();
+    let mut buf = String::new();
+
+    while let Some(chunk) = stream.next().await {
+        let bytes = chunk.map_err(|e| e.to_string())?;
+        buf.push_str(&String::from_utf8_lossy(&bytes));
+
+        while let Some(pos) = buf.find("\n\n") {
+            let line = buf[..pos].to_string();
+            buf = buf[pos + 2..].to_string();
+            let data = line.strip_prefix("data: ").unwrap_or(&line);
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(data) {
+                match val.get("type").and_then(|t| t.as_str()) {
+                    Some("note") => {
+                        if let Some(note) = val.get("note") {
+                            // Persist to SQLite.
+                            let id = uuid::Uuid::new_v4().to_string();
+                            let page = note.get("page").and_then(|v| v.as_i64()).unwrap_or(0);
+                            let para = note.get("paragraph_index").and_then(|v| v.as_i64()).unwrap_or(0);
+                            let ntype = note.get("type").and_then(|v| v.as_str()).unwrap_or("restatement");
+                            let text = note.get("note_text").and_then(|v| v.as_str()).unwrap_or("");
+                            let now = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .map(|d| d.as_secs() as i64)
+                                .unwrap_or(0);
+
+                            {
+                                let db = db_state.db.lock();
+                                let _ = db.execute(
+                                    "INSERT OR IGNORE INTO marginalia
+                                        (id, paper_id, page, paragraph_index, type, note_text, generated_at)
+                                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+                                    rusqlite::params![&id, &paper_id, page, para, ntype, text, now],
+                                );
+                            }
+
+                            // Relay to frontend.
+                            let _ = app.emit("marginalia:note", serde_json::json!({
+                                "paper_id": &paper_id,
+                                "note": {
+                                    "id": &id,
+                                    "page": page,
+                                    "paragraph_index": para,
+                                    "type": ntype,
+                                    "note_text": text,
+                                }
+                            }));
+                        }
+                    }
+                    Some("done") => {
+                        // Mark paper as marginalia_done.
+                        {
+                            let db = db_state.db.lock();
+                            let _ = db.execute(
+                                "UPDATE papers SET marginalia_done = 1 WHERE id = ?1",
+                                [&paper_id],
+                            );
+                        }
+                        let count = val.get("total_count").and_then(|v| v.as_i64()).unwrap_or(0);
+                        let _ = app.emit("marginalia:complete", serde_json::json!({
+                            "paper_id": &paper_id,
+                            "total_count": count,
+                        }));
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Retrieve all marginalia for a paper from SQLite.
+#[tauri::command]
+pub fn get_marginalia(
+    paper_id: String,
+    db_state: State<'_, AppState>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let db = db_state.db.lock();
+    let mut stmt = db
+        .prepare(
+            "SELECT id, page, paragraph_index, type, note_text, ref_page,
+                    is_edited, edited_text
+               FROM marginalia
+              WHERE paper_id = ?1 AND is_deleted = 0
+              ORDER BY page, paragraph_index",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([&paper_id], |row| {
+            Ok(serde_json::json!({
+                "id": row.get::<_, String>(0)?,
+                "page": row.get::<_, i64>(1)?,
+                "paragraph_index": row.get::<_, i64>(2)?,
+                "type": row.get::<_, String>(3)?,
+                "note_text": row.get::<_, String>(4)?,
+                "ref_page": row.get::<_, Option<i64>>(5)?,
+                "is_edited": row.get::<_, i64>(6)? != 0,
+                "edited_text": row.get::<_, Option<String>>(7)?,
+            }))
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    Ok(rows)
+}

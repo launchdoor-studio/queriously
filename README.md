@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="public/logo.svg" width="128" alt="Queriously Logo" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="queriously-white-bg.png">
+    <source media="(prefers-color-scheme: light)" srcset="queriously-red-bg.png">
+    <img alt="Queriously Logo" src="queriously-red-bg.png" width="128">
+  </picture>
 </p>
 
 <h1 align="center">Queriously</h1>

@@ -2,19 +2,14 @@ import { readFile } from "@tauri-apps/plugin-fs";
 import { loadPdfFromBytes } from "../lib/pdfjs";
 import { api, type Paper } from "../lib/tauri";
 import { useLibraryStore } from "../store/libraryStore";
+import { useMarginaliaStore } from "../store/marginaliaStore";
 import { usePdfStore } from "../store/pdfStore";
 
-/**
- * Open a PDF end-to-end: register it with the Rust library, read the file
- * bytes through the Tauri FS plugin, load the document into pdfjs, and push
- * it into both the pdf store and the library store. Then kick off the AI
- * ingest pipeline (parse → chunk → embed → ChromaDB) in the background so
- * QA and marginalia become available without user action.
- */
 export function usePdf() {
   const setDoc = usePdfStore((s) => s.setDoc);
   const setPaper = usePdfStore((s) => s.setPaper);
   const refreshLibrary = useLibraryStore((s) => s.refresh);
+  const setMargGenerating = useMarginaliaStore((s) => s.setGenerating);
 
   async function openPath(path: string): Promise<Paper> {
     const paper = await api.openPdf(path);
@@ -24,14 +19,26 @@ export function usePdf() {
     setDoc(doc, doc.numPages);
     void refreshLibrary();
 
-    // Fire-and-forget: index the paper if not already done. The sidecar may
-    // not be ready yet (first launch) — that's fine, the user can still read
-    // and the ingest will be re-triggered later via the chat panel.
+    // Auto-ingest if not already indexed, then trigger marginalia.
     if (!paper.is_indexed) {
       api
         .ingestPaper(paper.id, path)
-        .then(() => refreshLibrary())
+        .then(() => {
+          void refreshLibrary();
+          if (!paper.marginalia_done) {
+            setMargGenerating(true);
+            api
+              .generateMarginalia(paper.id, path)
+              .catch((err) => console.warn("marginalia failed:", err));
+          }
+        })
         .catch((err) => console.warn("ingest failed (will retry):", err));
+    } else if (!paper.marginalia_done) {
+      // Indexed but marginalia not yet generated.
+      setMargGenerating(true);
+      api
+        .generateMarginalia(paper.id, path)
+        .catch((err) => console.warn("marginalia failed:", err));
     }
 
     return paper;

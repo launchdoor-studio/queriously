@@ -31,6 +31,8 @@ pub fn run() {
             commands::pdf::delete_paper,
             commands::ai::ingest_paper,
             commands::ai::ask_question,
+            commands::ai::generate_marginalia,
+            commands::ai::get_marginalia,
             commands::sidecar_cmd::sidecar_status,
         ])
         .run(tauri::generate_context!())

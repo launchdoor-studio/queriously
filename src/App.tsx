@@ -9,10 +9,12 @@ import { StatusBar } from "./components/layout/StatusBar";
 import { TopBar } from "./components/layout/TopBar";
 import { FloatingToolbar } from "./components/pdf/FloatingToolbar";
 import { PDFViewer } from "./components/pdf/PDFViewer";
+import { useMarginalia } from "./hooks/useMarginalia";
 import { usePdf } from "./hooks/usePdf";
 
 function App() {
   const { openPath } = usePdf();
+  useMarginalia();
 
   async function onOpen() {
     const path = await open({
