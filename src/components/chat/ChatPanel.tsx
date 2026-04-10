@@ -1,10 +1,11 @@
-import { Send, Trash2 } from "lucide-react";
+import { AlertCircle, Send, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useChatStore } from "../../store/chatStore";
 import { usePdfStore } from "../../store/pdfStore";
 import { useChat } from "../../hooks/useChat";
 import { MessageBubble } from "./MessageBubble";
 import { ReadingModeSelector } from "./ReadingModeSelector";
+import { api } from "../../lib/tauri";
 
 export function ChatPanel() {
   const messages = useChatStore((s) => s.messages);
@@ -13,7 +14,13 @@ export function ChatPanel() {
   const paper = usePdfStore((s) => s.paper);
   const { send } = useChat();
   const [input, setInput] = useState("");
+  const [aiReady, setAiReady] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Check sidecar health before allowing sends.
+  useEffect(() => {
+    api.sidecarStatus().then((s) => setAiReady(s.ready)).catch(() => setAiReady(false));
+  }, []);
 
   // Auto-scroll to bottom on new messages.
   useEffect(() => {
@@ -43,6 +50,13 @@ export function ChatPanel() {
 
   return (
     <div className="h-full flex flex-col">
+      {/* AI offline banner */}
+      {!aiReady && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-accent-error/10 text-accent-error text-xs border-b border-accent-error/20">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          AI sidecar is offline. Check that the Python backend is running.
+        </div>
+      )}
       {/* Messages */}
       <div className="flex-1 min-h-0 overflow-auto px-3 py-4 flex flex-col gap-4">
         {messages.length === 0 ? (

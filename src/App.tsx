@@ -11,6 +11,7 @@ import { OnboardingModal } from "./components/onboarding/OnboardingModal";
 import { FloatingToolbar } from "./components/pdf/FloatingToolbar";
 import { PDFViewer } from "./components/pdf/PDFViewer";
 import { useAnnotations } from "./hooks/useAnnotations";
+import { useLlmConfig } from "./hooks/useLlmConfig";
 import { useMarginalia } from "./hooks/useMarginalia";
 import { usePdf } from "./hooks/usePdf";
 import { useReadingProgress } from "./hooks/useReadingProgress";
@@ -19,6 +20,7 @@ import { useSettingsStore } from "./store/settingsStore";
 function App() {
   const { openPath } = usePdf();
   useAnnotations();
+  useLlmConfig();
   useMarginalia();
   useReadingProgress();
   const onboarded = useSettingsStore((s) => s.onboarded);

@@ -90,8 +90,11 @@ export function PDFViewer() {
 
   if (!doc) {
     return (
-      <div className="h-full w-full flex items-center justify-center text-text-muted">
-        Open a PDF to start reading.
+      <div className="h-full w-full flex flex-col items-center justify-center text-text-muted gap-3">
+        <div className="text-4xl opacity-30">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </div>
+        <p className="text-sm">Drop a PDF here or press <kbd className="px-1.5 py-0.5 rounded bg-surface-overlay text-text-secondary text-xs font-mono">⌘O</kbd> to open</p>
       </div>
     );
   }
