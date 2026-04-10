@@ -24,22 +24,22 @@ struct Handshake {
 /// to the repo's `python/main.py` invoked via the system Python. Phase 4 will
 /// swap this for a PyInstaller-bundled binary (OQ-02 in the spec).
 fn sidecar_command() -> Option<Command> {
-    let (python_dir, repo_py) = std::env::current_dir()
-        .ok()
-        .and_then(|cwd| {
-            // Dev mode: tauri dev runs from src-tauri/, so climb one level.
-            let parent = cwd.join("..");
-            let candidate = parent.join("python").join("main.py");
-            if candidate.exists() {
-                return Some((parent.join("python"), candidate));
-            }
-            let alt_dir = cwd.join("python");
-            let alt = alt_dir.join("main.py");
-            if alt.exists() {
-                return Some((alt_dir.clone(), alt));
-            }
-            None
-        })?;
+    // Find the repo root containing the `python/` package directory.
+    // Dev mode: tauri dev runs from src-tauri/, so we also check one level up.
+    let repo_root = std::env::current_dir().ok().and_then(|cwd| {
+        // Check if cwd itself contains python/main.py
+        if cwd.join("python").join("main.py").exists() {
+            return Some(cwd);
+        }
+        // Check parent (tauri dev runs from src-tauri/)
+        let parent = cwd.join("..");
+        if parent.join("python").join("main.py").exists() {
+            return Some(std::fs::canonicalize(parent).ok()?);
+        }
+        None
+    })?;
+
+    let python_dir = repo_root.join("python");
 
     // Prefer venv Python if it exists, then QUERIOUSLY_PYTHON env, then system python3.
     let venv_python = python_dir.join(".venv").join("bin").join("python3");
@@ -50,8 +50,12 @@ fn sidecar_command() -> Option<Command> {
     };
 
     eprintln!("[sidecar] using python: {python_bin}");
+    eprintln!("[sidecar] repo root: {}", repo_root.display());
+
+    // Run as `python -m python.main` from the repo root so relative imports work.
     let mut cmd = Command::new(python_bin);
-    cmd.arg(repo_py);
+    cmd.args(["-m", "python.main"]);
+    cmd.current_dir(&repo_root);
     cmd.stdout(Stdio::piped());
     cmd.stderr(Stdio::piped());
     Some(cmd)
@@ -103,8 +107,9 @@ pub fn spawn() -> SidecarHandle {
 
     state.lock().child = Some(child);
 
-    // Small grace period so the handshake can land before the UI asks for it.
-    std::thread::sleep(Duration::from_millis(250));
+    // Grace period so the handshake can land before the UI asks for it.
+    // The sidecar may take a few seconds to start (loading ML libraries).
+    std::thread::sleep(Duration::from_secs(3));
     state
 }
 
