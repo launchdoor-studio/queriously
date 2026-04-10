@@ -349,3 +349,75 @@ pub fn get_marginalia(
 
     Ok(rows)
 }
+
+// ---------- Summarization ----------
+
+/// Proxy to the Python sidecar's /summarize SSE endpoint. Streams tokens and
+/// emits the final summary, which the frontend caches in its store.
+#[tauri::command]
+pub async fn summarize_paper(
+    paper_id: String,
+    mode: String,
+    scope: String,
+    content: Option<String>,
+    app: AppHandle,
+    sidecar: State<'_, SidecarHandle>,
+) -> Result<String, String> {
+    let url = base_url(&sidecar).ok_or("sidecar not ready")?;
+
+    let resp = HTTP
+        .post(format!("{url}/summarize"))
+        .json(&serde_json::json!({
+            "paper_id": &paper_id,
+            "mode": &mode,
+            "scope": &scope,
+            "content": &content,
+        }))
+        .timeout(std::time::Duration::from_secs(120))
+        .send()
+        .await
+        .map_err(|e| format!("summarize request failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("summarize error: {body}"));
+    }
+
+    use futures_util::StreamExt;
+    let mut stream = resp.bytes_stream();
+    let mut buf = String::new();
+    let mut full_content = String::new();
+
+    while let Some(chunk) = stream.next().await {
+        let bytes = chunk.map_err(|e| e.to_string())?;
+        buf.push_str(&String::from_utf8_lossy(&bytes));
+
+        while let Some(pos) = buf.find("\n\n") {
+            let line = buf[..pos].to_string();
+            buf = buf[pos + 2..].to_string();
+            let data = line.strip_prefix("data: ").unwrap_or(&line);
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(data) {
+                match val.get("type").and_then(|t| t.as_str()) {
+                    Some("token") => {
+                        if let Some(tok) = val.get("token").and_then(|t| t.as_str()) {
+                            let _ = app.emit("summary:token", serde_json::json!({
+                                "paper_id": &paper_id,
+                                "token": tok,
+                            }));
+                        }
+                    }
+                    Some("done") => {
+                        full_content = val
+                            .get("content")
+                            .and_then(|c| c.as_str())
+                            .unwrap_or("")
+                            .to_string();
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+
+    Ok(full_content)
+}

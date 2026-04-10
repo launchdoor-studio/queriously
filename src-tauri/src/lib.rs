@@ -33,6 +33,7 @@ pub fn run() {
             commands::ai::ask_question,
             commands::ai::generate_marginalia,
             commands::ai::get_marginalia,
+            commands::ai::summarize_paper,
             commands::sidecar_cmd::sidecar_status,
         ])
         .run(tauri::generate_context!())

@@ -44,6 +44,8 @@ export const api = {
     invoke<void>("delete_paper", { paperId, deleteAnnotations }),
   ingestPaper: (paperId: string, filePath: string) =>
     invoke<IngestResult>("ingest_paper", { paperId, filePath }),
+  summarizePaper: (paperId: string, mode: string, scope: string, content?: string) =>
+    invoke<string>("summarize_paper", { paperId, mode, scope, content: content ?? null }),
   generateMarginalia: (paperId: string, filePath: string) =>
     invoke<void>("generate_marginalia", { paperId, filePath }),
   getMarginalia: (paperId: string) =>

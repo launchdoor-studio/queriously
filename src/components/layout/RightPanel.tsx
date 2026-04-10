@@ -2,6 +2,7 @@ import { FileText, MessageSquare, Quote, Sigma } from "lucide-react";
 import { useState } from "react";
 import { cn } from "../../lib/utils";
 import { ChatPanel } from "../chat/ChatPanel";
+import { SummaryPanel } from "../chat/SummaryPanel";
 
 type Tab = "chat" | "equations" | "citations" | "summary";
 
@@ -37,6 +38,8 @@ export function RightPanel() {
       <div className="flex-1 min-h-0">
         {tab === "chat" ? (
           <ChatPanel />
+        ) : tab === "summary" ? (
+          <SummaryPanel />
         ) : (
           <div className="h-full flex items-center justify-center text-text-muted text-xs p-4">
             Not implemented in Phase 1.
