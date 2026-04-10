@@ -95,7 +95,6 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
     try {
       // pdfjs 4.x: construct a TextLayer and render it. Falls back silently
       // if the runtime signature drifts so the canvas still paints.
-      // @ts-expect-error TextLayer is exported by pdfjs-dist 4.x at runtime
       const tl = new pdfjsLib.TextLayer({
         textContentSource: page.streamTextContent(),
         container: textLayer,

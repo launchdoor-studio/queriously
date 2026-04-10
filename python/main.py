@@ -25,6 +25,11 @@ APP_VERSION = "0.1.0"
 
 app = FastAPI(title="Queriously Sidecar", version=APP_VERSION)
 
+# --- routers ---
+from .routers.ingest import router as ingest_router  # noqa: E402
+
+app.include_router(ingest_router)
+
 
 class HealthResponse(BaseModel):
     status: str

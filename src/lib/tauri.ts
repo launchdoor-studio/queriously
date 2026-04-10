@@ -23,10 +23,26 @@ export type SidecarStatus = {
   health: string | null;
 };
 
+export type IngestResult = {
+  paper_id: string;
+  chunk_count: number;
+  equation_count: number;
+  citation_count: number;
+  metadata: {
+    title: string | null;
+    authors: string | null;
+    abstract: string | null;
+    year: number | null;
+    page_count: number;
+  };
+};
+
 export const api = {
   openPdf: (path: string) => invoke<Paper>("open_pdf", { path }),
   getLibrary: () => invoke<Paper[]>("get_library"),
   deletePaper: (paperId: string, deleteAnnotations: boolean) =>
     invoke<void>("delete_paper", { paperId, deleteAnnotations }),
+  ingestPaper: (paperId: string, filePath: string) =>
+    invoke<IngestResult>("ingest_paper", { paperId, filePath }),
   sidecarStatus: () => invoke<SidecarStatus>("sidecar_status"),
 };

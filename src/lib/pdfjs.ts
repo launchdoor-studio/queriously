@@ -4,7 +4,6 @@
  * a file path (Tauri FS plugin) or an ArrayBuffer/Uint8Array.
  */
 import * as pdfjsLib from "pdfjs-dist";
-// @ts-expect-error Vite-specific worker URL import
 import PdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = PdfWorker as string;

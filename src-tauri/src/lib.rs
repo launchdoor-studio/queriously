@@ -29,6 +29,7 @@ pub fn run() {
             commands::pdf::open_pdf,
             commands::pdf::get_library,
             commands::pdf::delete_paper,
+            commands::ai::ingest_paper,
             commands::sidecar_cmd::sidecar_status,
         ])
         .run(tauri::generate_context!())

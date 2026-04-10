@@ -7,8 +7,9 @@ import { usePdfStore } from "../store/pdfStore";
 /**
  * Open a PDF end-to-end: register it with the Rust library, read the file
  * bytes through the Tauri FS plugin, load the document into pdfjs, and push
- * it into both the pdf store (so the viewer renders) and the library store
- * (so the sidebar reflects the most-recently-opened ordering).
+ * it into both the pdf store and the library store. Then kick off the AI
+ * ingest pipeline (parse → chunk → embed → ChromaDB) in the background so
+ * QA and marginalia become available without user action.
  */
 export function usePdf() {
   const setDoc = usePdfStore((s) => s.setDoc);
@@ -22,6 +23,17 @@ export function usePdf() {
     setPaper(paper);
     setDoc(doc, doc.numPages);
     void refreshLibrary();
+
+    // Fire-and-forget: index the paper if not already done. The sidecar may
+    // not be ready yet (first launch) — that's fine, the user can still read
+    // and the ingest will be re-triggered later via the chat panel.
+    if (!paper.is_indexed) {
+      api
+        .ingestPaper(paper.id, path)
+        .then(() => refreshLibrary())
+        .catch((err) => console.warn("ingest failed (will retry):", err));
+    }
+
     return paper;
   }
 
