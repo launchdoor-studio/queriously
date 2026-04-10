@@ -40,6 +40,8 @@ pub fn run() {
             commands::annotations::get_annotations,
             commands::annotations::delete_annotation,
             commands::sidecar_cmd::sidecar_status,
+            commands::config::update_llm_config,
+            commands::config::check_ollama,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

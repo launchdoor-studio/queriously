@@ -1,24 +1,28 @@
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { open } from "@tauri-apps/plugin-dialog";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { LibraryPanel } from "./components/library/LibraryPanel";
 import { RightPanel } from "./components/layout/RightPanel";
 import { Sidebar } from "./components/layout/Sidebar";
 import { StatusBar } from "./components/layout/StatusBar";
 import { TopBar } from "./components/layout/TopBar";
+import { OnboardingModal } from "./components/onboarding/OnboardingModal";
 import { FloatingToolbar } from "./components/pdf/FloatingToolbar";
 import { PDFViewer } from "./components/pdf/PDFViewer";
 import { useAnnotations } from "./hooks/useAnnotations";
 import { useMarginalia } from "./hooks/useMarginalia";
 import { usePdf } from "./hooks/usePdf";
 import { useReadingProgress } from "./hooks/useReadingProgress";
+import { useSettingsStore } from "./store/settingsStore";
 
 function App() {
   const { openPath } = usePdf();
   useAnnotations();
   useMarginalia();
   useReadingProgress();
+  const onboarded = useSettingsStore((s) => s.onboarded);
+  const [showOnboarding, setShowOnboarding] = useState(!onboarded);
 
   async function onOpen() {
     const path = await open({

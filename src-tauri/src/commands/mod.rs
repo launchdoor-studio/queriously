@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod annotations;
+pub mod config;
 pub mod pdf;
 pub mod sidecar_cmd;
 

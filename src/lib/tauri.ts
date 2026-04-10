@@ -61,4 +61,8 @@ export const api = {
   deleteAnnotation: (id: string) =>
     invoke<void>("delete_annotation", { id }),
   sidecarStatus: () => invoke<SidecarStatus>("sidecar_status"),
+  updateLlmConfig: (config: { model: string; api_key?: string | null; base_url?: string | null }) =>
+    invoke<void>("update_llm_config", { config }),
+  checkOllama: () =>
+    invoke<{ running: boolean; models: string[] }>("check_ollama"),
 };
