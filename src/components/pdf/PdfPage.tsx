@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { PdfDoc } from "../../lib/pdfjs";
 import { pdfjsLib } from "../../lib/pdfjs";
-import { usePdfStore } from "../../store/pdfStore";
 import { AnnotationLayer } from "./AnnotationLayer";
 import { MarginaliaLayer } from "./MarginaliaLayer";
 
@@ -13,13 +12,9 @@ type Props = {
 };
 
 /**
- * Renders a single PDF page to a canvas with an absolutely-positioned text
- * layer on top. The text layer is rendered from pdfjs's extracted character
- * geometry so native browser selection works across lines and columns.
- *
- * Each page is lazily rendered the first time it intersects the viewport —
- * once rendered, it stays mounted (keeps selection / scroll stable) but we
- * only pay the render cost for pages the user actually looks at.
+ * Renders a single PDF page to a canvas with an absolutely-positioned pdfjs
+ * text layer on top. Selection is handled entirely by the browser's native
+ * ::selection — no custom overlay rects.
  */
 export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,10 +22,7 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
   const textLayerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [rendered, setRendered] = useState(false);
-  const selection = usePdfStore((s) => s.selection);
 
-  // First pass: fetch the page to learn its dimensions so the placeholder
-  // reserves the correct height and the virtualizer can measure accurately.
   useEffect(() => {
     let cancelled = false;
     doc.getPage(pageNumber).then((page) => {
@@ -43,7 +35,6 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
     };
   }, [doc, pageNumber, zoom]);
 
-  // Intersection observer: render on first visibility, track active page.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -65,8 +56,6 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rendered, pageNumber, zoom]);
 
-  // Re-render the canvas when the zoom level changes for an already-rendered
-  // page. The text layer is rebuilt from scratch with the new viewport.
   useEffect(() => {
     if (!rendered) return;
     void renderPage();
@@ -92,13 +81,11 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
 
     await page.render({ canvasContext: ctx, viewport }).promise;
 
-    // Build text layer. We clear and re-populate on each render so zoom works.
+    // Build text layer. Clear and re-populate on each render so zoom works.
     textLayer.innerHTML = "";
     textLayer.style.width = `${viewport.width}px`;
     textLayer.style.height = `${viewport.height}px`;
     try {
-      // pdfjs 4.x: construct a TextLayer and render it. Falls back silently
-      // if the runtime signature drifts so the canvas still paints.
       const tl = new pdfjsLib.TextLayer({
         textContentSource: page.streamTextContent(),
         container: textLayer,
@@ -116,42 +103,16 @@ export function PdfPage({ doc, pageNumber, zoom, onVisible }: Props) {
     <div
       ref={containerRef}
       data-page={pageNumber}
-      className="relative mx-auto my-4 shadow-lg bg-white select-none"
+      className="relative mx-auto my-4 shadow-lg bg-white"
       style={{
         width: size ? `${size.w}px` : undefined,
         height: size ? `${size.h}px` : undefined,
       }}
     >
-      <canvas ref={canvasRef} className="block pointer-events-none z-[1]" />
-      
-      {selection && selection.page === pageNumber && selection.rects.length > 0 && (
-        <div className="absolute inset-0 pointer-events-none z-[2]">
-          {selection.rects.map((r, idx) => {
-            const [x1, y1, x2, y2] = r;
-            return (
-              <div
-                key={`${pageNumber}-selection-${idx}`}
-                className="absolute rounded-[2px] bg-accent-primary/25"
-                style={{
-                  left: `${x1 * 100}%`,
-                  top: `${y1 * 100}%`,
-                  width: `${(x2 - x1) * 100}%`,
-                  height: `${(y2 - y1) * 100}%`,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
-
+      <canvas ref={canvasRef} className="block" />
       <div
         ref={textLayerRef}
-        className="textLayer absolute inset-0 leading-none select-text z-[3]"
-        style={{
-          // pdfjs text layer expects these CSS variables / positioning
-          color: "transparent",
-          overflow: "hidden",
-        }}
+        className="textLayer absolute inset-0 leading-none"
       />
       {!rendered && (
         <div className="absolute inset-0 flex items-center justify-center text-text-muted text-xs">

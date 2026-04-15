@@ -10,6 +10,10 @@ import { useAnnotationStore } from "../../store/annotationStore";
 import { usePdfStore } from "../../store/pdfStore";
 import { useChat } from "../../hooks/useChat";
 
+function clamp01(v: number) {
+  return Math.min(1, Math.max(0, v));
+}
+
 export function FloatingToolbar() {
   const selection = usePdfStore((s) => s.selection);
   const paper = usePdfStore((s) => s.paper);
@@ -26,6 +30,7 @@ export function FloatingToolbar() {
   const left = rect.left + rect.width / 2;
 
   function dismiss() {
+    window.getSelection()?.removeAllRanges();
     setSelection(null);
   }
 
@@ -49,20 +54,21 @@ export function FloatingToolbar() {
 
   function highlight() {
     if (!paper) return;
-    // Store normalized coords based on the selection rect relative to the
-    // page element. This is a rough approximation — exact PDF-space mapping
-    // would require pdfjs viewport transform, deferred to Phase 2.
+
     const pageEl = document.querySelector<HTMLElement>(`[data-page="${page}"]`);
-    let coords = [0, 0, 1, 0.02]; // fallback strip
+    let coords: number[][] = [[0, 0, 1, 0.02]]; // fallback
+
     if (pageEl) {
       const pr = pageEl.getBoundingClientRect();
-      coords = [
-        (rect.left - pr.left) / pr.width,
-        (rect.top - pr.top) / pr.height,
-        (rect.right - pr.left) / pr.width,
-        (rect.bottom - pr.top) / pr.height,
-      ];
+      // Use the toolbar-positioning rect as a single highlight region.
+      coords = [[
+        clamp01((rect.left - pr.left) / pr.width),
+        clamp01((rect.top - pr.top) / pr.height),
+        clamp01((rect.right - pr.left) / pr.width),
+        clamp01((rect.bottom - pr.top) / pr.height),
+      ]];
     }
+
     addAnnotation({
       id: crypto.randomUUID(),
       paper_id: paper.id,
@@ -86,6 +92,7 @@ export function FloatingToolbar() {
 
   return (
     <div
+      data-floating-toolbar
       className="fixed z-50 flex items-center gap-0.5 px-1.5 py-1
                  bg-surface-raised border border-surface-border rounded-lg
                  shadow-lg animate-in fade-in"

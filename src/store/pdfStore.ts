@@ -5,6 +5,7 @@ import type { Paper } from "../lib/tauri";
 export type Selection = {
   text: string;
   page: number;
+  /** Bounding rect for toolbar positioning; null while still dragging */
   rect: DOMRect | null;
 };
 
