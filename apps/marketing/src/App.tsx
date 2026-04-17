@@ -1,8 +1,11 @@
 import { useEffect, useState, type CSSProperties } from 'react'
+import { Moon, Sun } from 'lucide-react'
 import brandLogo from '../../../queriously-red-bg.png'
 import { AppShellMock } from './components/AppShellMock'
 
 type ThemeMode = 'light' | 'dark'
+
+const GITHUB_URL = 'https://github.com/growvth/queriously'
 
 const stagger = (index: number, step = 60): CSSProperties =>
   ({ ['--reveal-delay' as string]: `${index * step}ms` }) as CSSProperties
@@ -147,16 +150,43 @@ function ThemeToggle({
   theme: ThemeMode
   onToggle: () => void
 }) {
+  const nextLabel = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
   return (
     <button
-      className="theme-toggle"
+      className="icon-button"
       type="button"
       onClick={onToggle}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={nextLabel}
+      title={nextLabel}
     >
-      <span className="theme-icon" aria-hidden="true">{theme === 'dark' ? '☾' : '☀'}</span>
+      <span className="icon-button-glyph" aria-hidden="true">
+        {theme === 'dark' ? <Sun size={18} strokeWidth={2} /> : <Moon size={18} strokeWidth={2} />}
+      </span>
     </button>
+  )
+}
+
+function GithubLink() {
+  return (
+    <a
+      className="icon-button"
+      href={GITHUB_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Queriously on GitHub"
+      title="View source on GitHub"
+    >
+      <svg
+        className="icon-button-glyph"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.79 8.21 11.38.6.11.82-.26.82-.58 0-.29-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.32.47-2.39 1.24-3.23-.12-.3-.54-1.52.12-3.17 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.66 1.65.25 2.87.12 3.17.77.84 1.24 1.91 1.24 3.23 0 4.62-2.81 5.64-5.49 5.94.43.37.82 1.1.82 2.22 0 1.61-.02 2.9-.02 3.3 0 .32.22.69.82.57C20.57 22.28 24 17.8 24 12.5 24 5.87 18.63.5 12 .5z" />
+      </svg>
+    </a>
   )
 }
 
@@ -219,6 +249,7 @@ function App() {
             <span className="brand-word">Queriously</span>
           </div>
           <div className="nav-actions">
+            <GithubLink />
             <ThemeToggle theme={theme} onToggle={handleThemeToggle} />
           </div>
         </div>

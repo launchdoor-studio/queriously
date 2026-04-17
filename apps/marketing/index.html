@@ -2,9 +2,75 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>marketing</title>
+
+    <title>Queriously — local-first PDF research reader for macOS</title>
+    <meta
+      name="description"
+      content="Queriously is a local-first macOS desktop reader for technical PDFs. Ask questions with citations anchored to source passages, keep a library, notes, and sessions on your machine. BYOK. Open source."
+    />
+    <meta
+      name="keywords"
+      content="Queriously, PDF reader, research tool, macOS app, local-first, BYOK, citations, grounded Q&A, open source, Tauri, technical reading, research assistant"
+    />
+    <meta name="author" content="Queriously" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#ee0042" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1113" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- Favicons & platform icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="mask-icon" href="/favicon.svg" color="#ee0042" />
+
+    <!-- Canonical + Open Graph -->
+    <link rel="canonical" href="https://queriously.app/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Queriously" />
+    <meta property="og:title" content="Queriously — local-first PDF research reader for macOS" />
+    <meta
+      property="og:description"
+      content="A macOS desktop reader for technical PDFs. Cited answers, marginalia, and sessions that stay on your machine. BYOK and open source."
+    />
+    <meta property="og:url" content="https://queriously.app/" />
+    <meta property="og:image" content="https://queriously.app/og-image.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Queriously logo" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Queriously — local-first PDF research reader for macOS" />
+    <meta
+      name="twitter:description"
+      content="Cited answers, marginalia, and sessions that stay on your machine. macOS, BYOK, open source."
+    />
+    <meta name="twitter:image" content="https://queriously.app/og-image.png" />
+    <meta name="twitter:image:alt" content="Queriously logo" />
+
+    <!-- Preconnect fonts (placeholders — safe if unused) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Queriously",
+        "description": "Local-first macOS desktop reader for technical PDFs with cited answers, marginalia, and sessions.",
+        "url": "https://queriously.app/",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "macOS 12+",
+        "softwareVersion": "0.1.0",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "codeRepository": "https://github.com/growvth/queriously",
+        "license": "https://github.com/growvth/queriously/blob/main/LICENSE",
+        "isAccessibleForFree": true
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
