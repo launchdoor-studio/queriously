@@ -48,6 +48,7 @@ export function ChatPanel() {
             role: m.role,
             content: m.content,
             sources: (m.sources ?? undefined) as ChatMessage["sources"],
+            evidence: (m.evidence ?? undefined) as ChatMessage["evidence"],
             confidence: (m.confidence ?? undefined) as ChatMessage["confidence"],
             reading_mode: (m.reading_mode ?? undefined) as ChatMessage["reading_mode"],
             counterpoint: m.counterpoint ?? null,
@@ -156,9 +157,9 @@ export function ChatPanel() {
       {/* Input area */}
       <div className="shrink-0 border-t border-surface-border">
         <ReadingModeSelector />
-        <form onSubmit={onSubmit} className="flex items-end gap-1.5 p-2">
+        <form onSubmit={onSubmit} className="flex items-center gap-1.5 p-2">
           <textarea
-            className="q-input flex-1 min-h-[36px] max-h-32 resize-none text-sm"
+            className="q-input flex-1 h-[38px] min-h-[38px] max-h-32 resize-none text-sm leading-5"
             placeholder="Ask about this paper..."
             rows={1}
             value={input}
@@ -173,7 +174,7 @@ export function ChatPanel() {
           <button
             type="submit"
             disabled={isLoading || !aiReady || !input.trim()}
-            className="q-btn-primary py-2 disabled:opacity-40"
+            className="q-btn-primary h-[38px] min-h-[38px] w-[38px] min-w-[38px] p-0 justify-center disabled:opacity-40"
             aria-label="Send"
           >
             <Send className="w-4 h-4" />
@@ -181,7 +182,7 @@ export function ChatPanel() {
           {messages.length > 0 && (
             <button
               type="button"
-              className="q-btn py-2 text-text-muted hover:text-accent-error"
+              className="q-btn h-[38px] min-h-[38px] w-[38px] min-w-[38px] p-0 justify-center text-text-muted hover:text-accent-error"
               onClick={onClearChat}
               title="Clear chat"
               aria-label="Clear chat"

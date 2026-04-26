@@ -16,6 +16,7 @@ export function useChat() {
   const finalizeMessage = useChatStore((s) => s.finalizeMessage);
   const setLoading = useChatStore((s) => s.setLoading);
   const readingMode = useChatStore((s) => s.readingMode);
+  const messagesByPaper = useChatStore((s) => s.messagesByPaper);
   const paper = usePdfStore((s) => s.paper);
 
   // Track the current streaming message id so event listeners can target it.
@@ -46,6 +47,7 @@ export function useChat() {
       answer: string;
       sources: any[];
       confidence: string;
+      evidence?: ChatMessage["evidence"];
       counterpoint?: string | null;
       followup_question?: string | null;
       margin_note?: string | null;
@@ -56,6 +58,7 @@ export function useChat() {
           content: e.payload.answer || "",
           sources: e.payload.sources,
           confidence: e.payload.confidence as any,
+          evidence: e.payload.evidence,
           counterpoint: e.payload.counterpoint,
           followup_question: e.payload.followup_question,
           margin_note: e.payload.margin_note,
@@ -70,6 +73,7 @@ export function useChat() {
             role: "assistant",
             content: finalMessage.content ?? "",
             sources: finalMessage.sources ?? null,
+            evidence: finalMessage.evidence ?? null,
             reading_mode: streamModeRef.current,
             selection_text: null,
             confidence: finalMessage.confidence ?? null,
@@ -104,6 +108,13 @@ export function useChat() {
     contextOverride?: string,
   ) {
     if (!paper) return;
+    const chatHistory = (messagesByPaper[paper.id] ?? [])
+      .filter((m) => !m.isStreaming && m.content.trim())
+      .slice(-6)
+      .map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
 
     // Add user message.
     const userId = crypto.randomUUID();
@@ -121,6 +132,7 @@ export function useChat() {
       role: "user",
       content: question,
       sources: null,
+      evidence: null,
       reading_mode: readingMode,
       selection_text: contextOverride ?? null,
       confidence: null,
@@ -151,6 +163,7 @@ export function useChat() {
         readingMode: readingMode,
         contextPaperIds: [],
         contextOverride: contextOverride ?? null,
+        chatHistory,
         topK: 5,
       });
     } catch (err) {

@@ -8,6 +8,7 @@ const PROVIDER_KEY = "queriously.llm.provider";
 const MODEL_KEY = "queriously.llm.model";
 const BASE_URL_KEY = "queriously.llm.baseUrl";
 const ONBOARDED_KEY = "queriously.onboarded";
+export const API_KEY_FALLBACK_KEY = "queriously.llm.apiKey.fallback";
 
 function initialTheme(): ThemeName {
   if (typeof window === "undefined") return "dark";
@@ -56,8 +57,6 @@ type SettingsState = {
 export const useSettingsStore = create<SettingsState>((set, get) => {
   const theme = initialTheme();
   applyTheme(theme);
-  // Cleanup legacy storage path now that API keys are in keychain.
-  window.localStorage.removeItem("queriously.llm.apiKey");
 
   return {
     theme,

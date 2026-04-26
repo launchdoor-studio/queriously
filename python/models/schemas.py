@@ -41,6 +41,7 @@ class QARequest(BaseModel):
     reading_mode: Literal["explain", "challenge", "connect", "annotate"] = "explain"
     context_paper_ids: list[str] = []
     context_override: str | None = None
+    chat_history: list[dict[str, str]] = []
     top_k: int = 5
 
 
@@ -50,6 +51,13 @@ class QAChunk(BaseModel):
     section: str | None = None
     text: str
     score: float
+
+
+class EvidenceStatus(BaseModel):
+    level: Literal["none", "weak", "partial", "strong"]
+    label: str
+    reason: str
+    answerable: bool = True
 
 
 class DraftAnnotation(BaseModel):
@@ -66,6 +74,7 @@ class QAResponse(BaseModel):
     draft_annotation: DraftAnnotation | None = None
     sources: list[QAChunk] = []
     confidence: Literal["low", "medium", "high"] = "medium"
+    evidence: EvidenceStatus | None = None
 
 
 class MarginaliaRequest(BaseModel):

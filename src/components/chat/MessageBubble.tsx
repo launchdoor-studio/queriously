@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
-import type { ChatMessage, Confidence } from "../../store/chatStore";
+import type { ChatMessage, EvidenceLevel } from "../../store/chatStore";
 import { cn } from "../../lib/utils";
 import { SourceCitation } from "./SourceCitation";
 
@@ -18,10 +18,18 @@ type Props = {
   onJumpToPage?: (page: number) => void;
 };
 
-const confidenceIcon: Record<Confidence, React.ReactNode> = {
-  low: <AlertCircle className="w-3.5 h-3.5 text-accent-warning" />,
-  medium: <AlertCircle className="w-3.5 h-3.5 text-text-muted" />,
-  high: <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />,
+const evidenceIcon: Record<EvidenceLevel, React.ReactNode> = {
+  none: <AlertCircle className="w-3.5 h-3.5 text-accent-error" />,
+  weak: <AlertCircle className="w-3.5 h-3.5 text-accent-warning" />,
+  partial: <AlertCircle className="w-3.5 h-3.5 text-text-muted" />,
+  strong: <CheckCircle2 className="w-3.5 h-3.5 text-accent-success" />,
+};
+
+const fallbackEvidence: NonNullable<ChatMessage["evidence"]> = {
+  level: "partial",
+  label: "Sources",
+  reason: "Source passages were retrieved for this answer.",
+  answerable: true,
 };
 
 export function MessageBubble({ message, onJumpToPage }: Props) {
@@ -87,11 +95,13 @@ export function MessageBubble({ message, onJumpToPage }: Props) {
           </div>
         )}
 
-        {/* Confidence + sources toggle */}
-        {!isUser && message.confidence && !message.isStreaming && (
+        {/* Evidence + sources toggle */}
+        {!isUser && !message.isStreaming && (message.evidence || message.sources?.length) && (
           <div className="flex items-center gap-2 text-xs text-text-muted">
-            {confidenceIcon[message.confidence]}
-            <span className="capitalize">{message.confidence} confidence</span>
+            {evidenceIcon[(message.evidence ?? fallbackEvidence).level]}
+            <span title={(message.evidence ?? fallbackEvidence).reason}>
+              {(message.evidence ?? fallbackEvidence).label}
+            </span>
             {message.sources && message.sources.length > 0 && (
               <button
                 onClick={() => setShowSources(!showSources)}

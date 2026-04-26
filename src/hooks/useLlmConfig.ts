@@ -1,6 +1,28 @@
 import { useEffect, useRef } from "react";
-import { useSettingsStore } from "../store/settingsStore";
+import { API_KEY_FALLBACK_KEY, useSettingsStore } from "../store/settingsStore";
 import { api } from "../lib/tauri";
+
+const LEGACY_API_KEY_KEY = "queriously.llm.apiKey";
+
+function readFallbackApiKey() {
+  if (typeof window === "undefined") return "";
+  return (
+    window.localStorage.getItem(API_KEY_FALLBACK_KEY) ??
+    window.localStorage.getItem(LEGACY_API_KEY_KEY) ??
+    ""
+  );
+}
+
+function writeFallbackApiKey(key: string) {
+  if (typeof window === "undefined") return;
+  const trimmed = key.trim();
+  if (trimmed) {
+    window.localStorage.setItem(API_KEY_FALLBACK_KEY, trimmed);
+  } else {
+    window.localStorage.removeItem(API_KEY_FALLBACK_KEY);
+  }
+  window.localStorage.removeItem(LEGACY_API_KEY_KEY);
+}
 
 /**
  * On app startup, push the locally-stored LLM config to the Python sidecar
@@ -23,16 +45,17 @@ export function useLlmConfig() {
       try {
         const stored = await api.getLlmApiKey();
         if (!cancelled) {
-          const key = stored ?? "";
-          lastSyncedApiKeyRef.current = key;
+          const key = stored ?? readFallbackApiKey();
+          lastSyncedApiKeyRef.current = stored ?? null;
           setLlmApiKey(key);
         }
       } catch (err) {
         console.warn("failed to load LLM API key", err);
-        // Keep local memory empty; onboarding/settings can still continue.
-        // Do not mark the empty value as synced or the next effect may delete
-        // a keychain item that merely failed to read.
-        lastSyncedApiKeyRef.current = null;
+        const key = readFallbackApiKey();
+        if (!cancelled) {
+          lastSyncedApiKeyRef.current = null;
+          setLlmApiKey(key);
+        }
       } finally {
         if (!cancelled) {
           setLlmApiKeyLoaded(true);
@@ -54,10 +77,13 @@ export function useLlmConfig() {
     api
       .setLlmApiKey(llmApiKey || null)
       .then(() => {
+        writeFallbackApiKey(llmApiKey);
         lastSyncedApiKeyRef.current = llmApiKey;
       })
       .catch((err) => {
         console.warn("failed to persist LLM API key", err);
+        writeFallbackApiKey(llmApiKey);
+        lastSyncedApiKeyRef.current = llmApiKey;
       });
   }, [llmApiKey, llmApiKeyLoaded]);
 

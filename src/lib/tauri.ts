@@ -58,6 +58,7 @@ export type ChatMessageRecord = {
   role: "user" | "assistant";
   content: string;
   sources?: unknown[] | null;
+  evidence?: unknown | null;
   reading_mode?: string | null;
   selection_text?: string | null;
   confidence?: string | null;
@@ -101,6 +102,7 @@ export const api = {
     role: "user" | "assistant";
     content: string;
     sources?: unknown[] | null;
+    evidence?: unknown | null;
     reading_mode?: string | null;
     selection_text?: string | null;
     confidence?: string | null;

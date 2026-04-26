@@ -146,7 +146,14 @@ struct QABody {
     reading_mode: String,
     context_paper_ids: Vec<String>,
     context_override: Option<String>,
+    chat_history: Vec<QAHistoryTurn>,
     top_k: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct QAHistoryTurn {
+    pub role: String,
+    pub content: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -155,6 +162,7 @@ pub struct ChatMessageRecord {
     pub role: String,
     pub content: String,
     pub sources: Option<serde_json::Value>,
+    pub evidence: Option<serde_json::Value>,
     pub reading_mode: Option<String>,
     pub selection_text: Option<String>,
     pub confidence: Option<String>,
@@ -172,6 +180,7 @@ pub struct SaveChatMessage {
     pub role: String,
     pub content: String,
     pub sources: Option<serde_json::Value>,
+    pub evidence: Option<serde_json::Value>,
     pub reading_mode: Option<String>,
     pub selection_text: Option<String>,
     pub confidence: Option<String>,
@@ -188,9 +197,9 @@ pub fn get_chat_messages(
     let db = db_state.db.lock();
     let mut stmt = db
         .prepare(
-            "SELECT m.id, m.role, m.content, m.sources, m.reading_mode,
-                    m.selection_text, m.confidence, m.counterpoint,
-                    m.followup_question, m.margin_note, m.created_at
+            "SELECT m.id, m.role, m.content, m.sources, m.evidence,
+                    m.reading_mode, m.selection_text, m.confidence,
+                    m.counterpoint, m.followup_question, m.margin_note, m.created_at
                FROM chat_messages m
                JOIN chat_sessions s ON s.id = m.chat_session_id
               WHERE s.paper_id = ?1 AND s.is_multi_paper = 0
@@ -203,18 +212,22 @@ pub fn get_chat_messages(
             let sources_raw: Option<String> = row.get(3)?;
             let sources =
                 sources_raw.and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
+            let evidence_raw: Option<String> = row.get(4)?;
+            let evidence =
+                evidence_raw.and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
             Ok(ChatMessageRecord {
                 id: row.get(0)?,
                 role: row.get(1)?,
                 content: row.get(2)?,
                 sources,
-                reading_mode: row.get(4)?,
-                selection_text: row.get(5)?,
-                confidence: row.get(6)?,
-                counterpoint: row.get(7)?,
-                followup_question: row.get(8)?,
-                margin_note: row.get(9)?,
-                created_at: row.get(10)?,
+                evidence,
+                reading_mode: row.get(5)?,
+                selection_text: row.get(6)?,
+                confidence: row.get(7)?,
+                counterpoint: row.get(8)?,
+                followup_question: row.get(9)?,
+                margin_note: row.get(10)?,
+                created_at: row.get(11)?,
             })
         })
         .map_err(|e| e.to_string())?
@@ -235,6 +248,7 @@ pub fn save_chat_message(
 
     let now = now_secs();
     let sources = message.sources.as_ref().map(|v| v.to_string());
+    let evidence = message.evidence.as_ref().map(|v| v.to_string());
     let db = db_state.db.lock();
 
     db.execute(
@@ -247,13 +261,14 @@ pub fn save_chat_message(
 
     db.execute(
         "INSERT INTO chat_messages
-            (id, chat_session_id, role, content, sources, reading_mode,
-             selection_text, confidence, counterpoint, followup_question,
-             margin_note, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
+            (id, chat_session_id, role, content, sources, evidence,
+             reading_mode, selection_text, confidence, counterpoint,
+             followup_question, margin_note, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)
          ON CONFLICT(id) DO UPDATE SET
              content = excluded.content,
              sources = excluded.sources,
+             evidence = excluded.evidence,
              reading_mode = excluded.reading_mode,
              selection_text = excluded.selection_text,
              confidence = excluded.confidence,
@@ -266,6 +281,7 @@ pub fn save_chat_message(
             &message.role,
             &message.content,
             &sources,
+            &evidence,
             &message.reading_mode,
             &message.selection_text,
             &message.confidence,
@@ -306,6 +322,7 @@ pub async fn ask_question(
     reading_mode: String,
     context_paper_ids: Vec<String>,
     context_override: Option<String>,
+    chat_history: Vec<QAHistoryTurn>,
     top_k: i32,
     app: AppHandle,
     sidecar: State<'_, SidecarHandle>,
@@ -321,6 +338,7 @@ pub async fn ask_question(
             reading_mode,
             context_paper_ids,
             context_override,
+            chat_history,
             top_k,
         })
         .timeout(std::time::Duration::from_secs(120))
@@ -372,6 +390,7 @@ pub async fn ask_question(
                                 "margin_note": val.get("margin_note"),
                                 "sources": val.get("sources"),
                                 "confidence": val.get("confidence"),
+                                "evidence": val.get("evidence"),
                             }),
                         );
                     }

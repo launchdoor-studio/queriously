@@ -24,6 +24,7 @@ fn migrate(conn: &Connection) -> anyhow::Result<()> {
     add_column_if_missing(conn, "chat_messages", "counterpoint", "TEXT")?;
     add_column_if_missing(conn, "chat_messages", "followup_question", "TEXT")?;
     add_column_if_missing(conn, "chat_messages", "margin_note", "TEXT")?;
+    add_column_if_missing(conn, "chat_messages", "evidence", "TEXT")?;
     Ok(())
 }
 
@@ -140,6 +141,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     role            TEXT NOT NULL,
     content         TEXT NOT NULL,
     sources         TEXT,
+    evidence        TEXT,
     reading_mode    TEXT,
     selection_text  TEXT,
     confidence      TEXT,
@@ -196,6 +198,7 @@ mod tests {
             "reading_mode",
             "selection_text",
             "confidence",
+            "evidence",
             "counterpoint",
             "followup_question",
             "margin_note",
@@ -249,12 +252,18 @@ mod tests {
         .expect("link paper to session");
 
         let paper_count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM papers WHERE id = 'paper-1'", [], |row| row.get(0))
+            .query_row(
+                "SELECT COUNT(*) FROM papers WHERE id = 'paper-1'",
+                [],
+                |row| row.get(0),
+            )
             .expect("paper count");
         let annotation_count: i64 = conn
-            .query_row("SELECT COUNT(*) FROM annotations WHERE paper_id = 'paper-1'", [], |row| {
-                row.get(0)
-            })
+            .query_row(
+                "SELECT COUNT(*) FROM annotations WHERE paper_id = 'paper-1'",
+                [],
+                |row| row.get(0),
+            )
             .expect("annotation count");
         let session_paper_count: i64 = conn
             .query_row(
@@ -296,23 +305,31 @@ mod tests {
         .expect("insert chat session");
         conn.execute(
             "INSERT INTO chat_messages
-                (id, chat_session_id, role, content, sources, reading_mode,
-                 selection_text, confidence, counterpoint, followup_question,
-                 margin_note, created_at)
+                (id, chat_session_id, role, content, sources, evidence,
+                 reading_mode, selection_text, confidence, counterpoint,
+                 followup_question, margin_note, created_at)
              VALUES
                 ('msg-user', 'chat-1', 'user', 'What is the claim?', NULL,
-                 'challenge', 'selected passage', NULL, NULL, NULL, NULL, 12),
+                 NULL, 'challenge', 'selected passage', NULL, NULL, NULL, NULL, 12),
                 ('msg-assistant', 'chat-1', 'assistant', 'The claim is grounded.',
-                 '[{\"page\":3,\"score\":0.91}]', 'challenge', NULL, 'high',
+                 '[{\"page\":3,\"score\":0.91}]',
+                 '{\"level\":\"strong\",\"label\":\"Well sourced\",\"answerable\":true}',
+                 'challenge', NULL, 'high',
                  'The paper hedges this result.', NULL, NULL, 13)",
             [],
         )
         .expect("insert chat messages");
 
-        let restored: Vec<(String, String, Option<String>, Option<String>)> = {
+        let restored: Vec<(
+            String,
+            String,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        )> = {
             let mut stmt = conn
                 .prepare(
-                    "SELECT role, content, sources, counterpoint
+                    "SELECT role, content, sources, evidence, counterpoint
                        FROM chat_messages
                       WHERE chat_session_id = 'chat-1'
                       ORDER BY created_at",
@@ -324,6 +341,7 @@ mod tests {
                     row.get::<_, String>(1)?,
                     row.get::<_, Option<String>>(2)?,
                     row.get::<_, Option<String>>(3)?,
+                    row.get::<_, Option<String>>(4)?,
                 ))
             })
             .expect("query chat")
@@ -334,9 +352,18 @@ mod tests {
         assert_eq!(restored.len(), 2);
         assert_eq!(restored[0].0, "user");
         assert_eq!(restored[1].0, "assistant");
-        assert!(restored[1].2.as_deref().unwrap_or("").contains("\"page\":3"));
+        assert!(restored[1]
+            .2
+            .as_deref()
+            .unwrap_or("")
+            .contains("\"page\":3"));
+        assert!(restored[1]
+            .3
+            .as_deref()
+            .unwrap_or("")
+            .contains("Well sourced"));
         assert_eq!(
-            restored[1].3.as_deref(),
+            restored[1].4.as_deref(),
             Some("The paper hedges this result.")
         );
     }

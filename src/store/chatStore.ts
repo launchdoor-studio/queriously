@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type ReadingMode = "explain" | "challenge" | "connect" | "annotate";
 export type Confidence = "low" | "medium" | "high";
+export type EvidenceLevel = "none" | "weak" | "partial" | "strong";
 
 export type Source = {
   paper_id: string;
@@ -11,12 +12,20 @@ export type Source = {
   score: number;
 };
 
+export type Evidence = {
+  level: EvidenceLevel;
+  label: string;
+  reason: string;
+  answerable: boolean;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   sources?: Source[];
   confidence?: Confidence;
+  evidence?: Evidence | null;
   counterpoint?: string | null;
   followup_question?: string | null;
   margin_note?: string | null;
